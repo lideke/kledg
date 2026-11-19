@@ -207,6 +207,7 @@ Sur les objets où un assistant aide (une transaction à rapprocher, un brouillo
 | `list_qonto_receipts` | Justificatifs que Qonto détient pour une transaction de la société ; droit `banking:read` |
 | `get_file` | Un document en ressource intégrée : justificatif d'une transaction, PDF d'une facture importée de Qonto, PDF d'un relevé Qonto ; 5 Mo au plus ; droit `banking:read` (justificatif, relevé) ou `entries:read` (facture) |
 | `lookup_siren` | Une entreprise de l'annuaire public (recherche-entreprises.api.gouv.fr) à partir de son SIREN, pour préparer `create_company` ; selon la politique de création des sociétés de l'instance (administrateurs de l'instance par défaut) |
+| `prepare_feedback` | Prépare un signalement de problème ou une idée depuis la conversation : lien de l'issue GitHub préremplie à partir des modèles du dépôt, recherche des issues existantes, contexte technique ajouté (version, commit, hébergeur). L'utilisateur relit et envoie depuis son compte GitHub ; l'outil n'envoie rien et ne lit aucune donnée de société ; tout utilisateur connecté ([signaler un problème](signaler-un-probleme.md)) |
 
 `get_bank_sync_status` donne aussi les intégrations bancaires (identifiant pour `sync_bank_data`, statut, fonctions actives, sans identifiant ni donnée du prestataire) et `list_management_fee_conventions` les périodes facturées d'une convention (vue `billings`) et les filiales candidates (vue `subsidiaries`).
 
@@ -311,6 +312,7 @@ L'assistant agit comme vous, dans la limite de votre rôle dans chaque société
 | `upload_receipt` | Envoyer le justificatif d'une transaction Qonto (JPEG, PNG ou PDF en base64, 5 Mo au plus) ; l'aperçu donne la transaction et le fichier (nom, type, taille, SHA-256) | `banking:reconcile` | Oui |
 | `manage_invoice` | Comptabiliser une facture (écriture en brouillon), annuler cette comptabilisation, supprimer un brouillon, enregistrer ou retirer un règlement, lettrer une facture réglée, reprendre la création dans Qonto d'une facture sans réponse de Qonto ; lignes de banque candidates (lecture) | `entries:create`, `entries:delete` ou `entries:update` selon l'action | Oui (sauf la lecture) |
 | `import_qonto_invoices` | Importer les clients et les factures de Qonto (idempotent) | `entries:create` et `banking:read` | Oui |
+| `import_e_invoice` | Importer une facture électronique reçue (PDF Factur-X, XML CII ou UBL, en base64) en facture d'achat brouillon : montants du document vérifiés (règles EN 16931), fournisseur retrouvé ou créé, fichier conservé tel quel ; le même fichier importé deux fois ne crée rien | `entries:create` | Oui |
 | `delete_tiers` | Supprimer un client ou un fournisseur sans facture | `entries:delete` | Oui |
 | `delete_budget_items` | Supprimer un budget ou une ligne | `budgets:manage` | Oui |
 | `delete_year_end_items` | Supprimer une provision, une évaluation ou une subvention, avec leurs brouillons | `entries:delete` | Oui |
@@ -410,7 +412,7 @@ Ce que l'assistant peut faire de chaque fonctionnalité récente (L : lecture, `
 | Abonnements détectés ([abonnements](abonnements.md)) | `list_detected_subscriptions` | `classify_subscription`, `add_subscription_to_budget` | `create_rule` (règle depuis un abonnement) | |
 | Frais de gestion ([frais de gestion](frais-de-gestion.md)) | `list_management_fee_conventions` (conventions, périodes facturées, filiales), `preview_management_fees` | | `manage_management_fee_convention` | Génération des factures (décision documentée ci-dessus) |
 | Notes de frais ([notes de frais](notes-de-frais.md)) | `list_expense_reports`, `get_expense_report`, `list_expense_claimants`, `list_expense_category_rules` | `create_draft_expense_report`, `update_draft_expense_report` | `manage_expense_report` (soumettre, renvoyer, valider, rouvrir, comptabiliser, rembourser, supprimer), `manage_expense_settings` (bénéficiaires et mots-clés) | |
-| Factures et tiers ([factures et tiers](factures-et-tiers.md)) | `list_tiers`, `get_tiers_flows`, `list_invoices`, `get_invoice` | `manage_tiers`, `update_draft_invoice` | `create_draft_invoice`, `manage_invoice`, `delete_tiers`, `import_qonto_invoices` | |
+| Factures et tiers ([factures et tiers](factures-et-tiers.md)) | `list_tiers`, `get_tiers_flows`, `list_invoices`, `get_invoice` | `manage_tiers`, `update_draft_invoice` | `create_draft_invoice`, `manage_invoice`, `delete_tiers`, `import_qonto_invoices`, `import_e_invoice` | |
 | Lettrage ([lettrage et tiers](lettrage-et-tiers.md)) | | | `list_unlettered_lines`, `letter_entry_lines`, `unletter_entry_lines`, `auto_letter_account` | |
 | Balance âgée et balance auxiliaire | `get_aged_balance`, `get_auxiliary_balance`, `export_report` (Excel) | | | |
 | Mode simple, dépenses et recettes à vérifier ([catégories simples](categories-simples.md)) | `list_expenses_to_review` | `accept_expense_suggestion`, `accept_all_expense_suggestions` (brouillons) | `validate_entries`, `upload_receipt`, `update_company_settings` (réglage de validation) | |
@@ -436,6 +438,7 @@ Ce que l'assistant peut faire de chaque fonctionnalité récente (L : lecture, `
 | Immobilisations | `list_fixed_assets` | `save_depreciation_record` | `create_fixed_asset`, `manage_fixed_asset`, `manage_depreciation_record`, `generate_depreciation` | |
 | Paramètres de la société, membres, mise en page des états | `get_company_settings`, `get_statement_layout` | | `update_company_settings`, `manage_company_records`, `manage_statement_layout`, `manage_members` (ajout et changement de rôle : administrateurs de l'instance), `manage_invitations` | Suppression définitive de société |
 | Création, archivage et restauration de société | `list_companies` (`includeArchived`), `lookup_siren` | | `create_company`, `archive_company`, `restore_company` | Suppression définitive |
+| Signaler un problème, proposer une idée ([signaler un problème](signaler-un-probleme.md)) | `prepare_feedback` | | | Envoyer l'issue (depuis le compte GitHub de l'utilisateur) |
 
 ## Inventaire de l'API
 
@@ -773,6 +776,7 @@ Niveaux : L, lecture (`kledg:read`) ; B, brouillons (`kledg:write`) ; CT, con
 | `POST /api/invoices/[id]/settle` | entries:update | `manage_invoice` (CT) |
 | `POST /api/invoices/[id]/qonto` | entries:create | `manage_invoice` (CT) |
 | `POST /api/invoices/import-qonto` | entries:create | `import_qonto_invoices` (CT) |
+| `POST /api/invoices/import-e-invoice` | entries:create | `import_e_invoice` (CT) |
 | `GET /api/invoices` | entries:read | `list_invoices` (L) |
 | `POST /api/invoices` | entries:create | `create_draft_invoice` (CT) |
 | `PATCH /api/journals/[id]` | ledger:manage | `manage_journals` (CT) |

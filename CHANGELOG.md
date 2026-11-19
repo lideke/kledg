@@ -4,6 +4,30 @@ Toutes les évolutions notables de Kledg sont consignées ici. Le format suit [K
 
 ## [Non publié]
 
+## [0.7.0] - 2026-11-18
+
+### Ajouté
+
+- Import des factures électroniques reçues : un PDF Factur-X, ou un XML CII ou UBL, remis par la plateforme agréée de la société, devient une facture d'achat en brouillon (bouton **Importer une facture électronique** de la page Factures d'achat, outil MCP `import_e_invoice`). Les lignes, la TVA par taux et les totaux du document sont repris tels quels, après les contrôles de cohérence de la norme EN 16931 (une facture incohérente est refusée avec la raison). Le fournisseur est retrouvé par SIREN, numéro de TVA ou nom, ou créé. Le fichier est conservé tel que reçu (LPF art. L102 B) et s'ouvre depuis la facture. Importer deux fois le même fichier, ou la même facture dans un autre format, ne crée rien. Seule une facture adressée à la société est acceptée. Kledg signale ce qu'il faut vérifier : autoliquidation et acquisition intracommunautaire (TVA de l'acheteur à passer à la main), remises ou lignes négatives (une ligne par taux), acompte déjà versé, taux étranger ([documentation](docs/factures-et-tiers.md#import-dune-facture-électronique)). Migration de la base : la facture garde le lien vers son fichier.
+
+### Corrigé
+
+- Serveur MCP avec la sécurité au niveau des lignes activée (`KLEDG_RLS=enforce`) : après un `next build`, `list_companies` et les autres outils pouvaient ne trouver aucune société, le contexte de l'utilisateur n'atteignant pas la base de données. Le contexte est désormais partagé entre les copies d'un module que le bundler peut créer (#98).
+
+## [0.6.0] - 2026-11-17
+
+### Ajouté
+
+- Signaler un problème ou proposer une idée depuis Kledg : le menu **Aide** et les pages d'erreur ouvrent une fenêtre qui prépare une issue GitHub à partir des modèles du dépôt (titre, description, étapes ou proposition). Le contexte technique ajouté est affiché avant l'envoi : version, commit, hébergeur, page sans identifiant ni nom de société, mode d'affichage, navigateur, langue, et la référence de l'erreur depuis une page d'erreur ; jamais de données comptables. L'utilisateur relit et envoie l'issue depuis son compte GitHub, Kledg n'envoie rien lui-même. **Est-ce déjà signalé ?** cherche les issues existantes. Outil MCP `prepare_feedback` pour qu'un assistant prépare le signalement depuis la conversation. `KLEDG_FEEDBACK_REPO` envoie les signalements d'une instance vers son propre dépôt ([documentation](docs/signaler-un-probleme.md)).
+
+### Modifié
+
+- Dépendances : Recharts 3 pour les graphiques (tableau de bord, prévision de trésorerie, évolution du solde d'un compte, vue groupe, flux entre tiers), Radix UI 1.2 (les groupes de boutons à choix unique sont annoncés comme des groupes de boutons radio aux lecteurs d'écran), React 19.3, jsdom 31 pour les tests, et les mises à jour mineures des autres dépendances.
+
+### Corrigé
+
+- Invitations : la date d'expiration affichée dans l'email et sur la page d'invitation est le jour en France, quel que soit le fuseau du serveur. Une invitation envoyée peu après minuit (heure de Paris) n'annonce plus une expiration un jour trop tôt.
+
 ## [0.5.2] - 2026-11-11
 
 ### Sécurité
